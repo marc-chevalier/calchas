@@ -22,8 +22,8 @@ setup(
         'Topic :: Software Development :: Libraries',
     ],
     install_requires=[
-        'sympy',
-        'ply',
+        'sympy>=1.0',
+        'ply>=3.10',
     ],
     packages=[
         'calchas_datamodel',
