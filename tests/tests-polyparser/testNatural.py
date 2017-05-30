@@ -127,6 +127,7 @@ class TestNatural(TestCase):
                      ("~ y", Not([y], {})),
                      ("x & y", And([x, y], {})),
                      ("x | ~z & ~ y", Or([x, And([Not([z], {}), Not([y], {})], {})], {})),
+                     ("1+2+", None),
                      ]
         for (expr, res) in test_list:
             self.assertEqual(repr(parse_natural(expr)), repr(res))

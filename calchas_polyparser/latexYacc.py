@@ -210,8 +210,6 @@ def p_expression(p):
 
 
 def p_error(p):
-    print("\033[91mAll is lost! Fly you fools!")
-    print(p)
-    print("\033[0m")
+    pass
 
 latexParser = yacc.yacc(debug=True, write_tables=False, optimize=True)

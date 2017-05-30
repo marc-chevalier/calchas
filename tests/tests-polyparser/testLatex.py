@@ -111,6 +111,7 @@ class TestLatex(TestCase):
                      ("\\sqrt{a}", "\\sqrt { a } ", Sqrt([a], {})),
                      ("\\sqrt[n]{a}", "\\sqrt [ n ] { a } ", Pow([a, Pow([n, Int(-1)], {})], {})),
                      ("\\sqrt {\\sqrt a}", "\\sqrt { \\sqrt { a } } ", Sqrt([Sqrt([a], {})], {})),
+                     ("1+2+", "1 + 2 + ", None),
                      ]
         for e in test_list:
             if len(e) == 4:

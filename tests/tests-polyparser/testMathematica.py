@@ -106,6 +106,7 @@ class TestMathematica(TestCase):
                      ("Limit[(1+x/n)^n, x->Infinity]",
                       Limit([Pow([Sum([Int(1), Prod([x, Pow([n, Int(-1)], {})], {})], {}), n], {})], {x: infinity})),
                      ("Solve[x^2==1, x]", Solve([Eq([Pow([x, Int(2)], {}), Int(1)], {}), x], {})),
+                     ("1+2+", None),
                      ]
         for test in test_list:
             if len(test) == 2:
