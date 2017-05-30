@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from calchas_datamodel import Sum, Prod, FunctionCallExpression as Call, Pow, IdExpression as Id, Sin, Cos, \
-    Fact, IntegerLiteralCalchasExpression as Int, Series, infinity, Integrate, Limit, Solve, Eq, Arctan, Sqrt
+    Fact, IntegerLiteralCalchasExpression as Int, Series, infinity, Integrate, Limit, Solve, Eq, Arctan, Sqrt, Log, Exp
 
 from calchas_polyparser import parse_mathematica, mathematicaLexer
 
@@ -107,6 +107,15 @@ class TestMathematica(TestCase):
                       Limit([Pow([Sum([Int(1), Prod([x, Pow([n, Int(-1)], {})], {})], {}), n], {})], {x: infinity})),
                      ("Solve[x^2==1, x]", Solve([Eq([Pow([x, Int(2)], {}), Int(1)], {}), x], {})),
                      ("1+2+", None),
+                     ('Limit[Sum[1/i, {i,1,n}]-Log[n], n->Infinity]',
+                      Limit([Sum([Series([Prod([Int(1), Pow([i, Int(-1)], {})], {}), i, Int(1), n], {}),
+                                  Prod([Int(-1), Log([n], {})], {})], {})], {n: infinity})),
+                     ('Sum[x^n/n!, {n,0,Infinity}]',
+                      Series([Prod([Pow([x, n], {}), Pow([Fact([n], {}), Int(-1)], {})], {}), n, Int(0), infinity], {})),
+                     ('Solve[Exp[x]/2+Exp[-x]/2==y,x]',
+                      Solve([Eq([Sum([Prod([Exp([x], {}), Pow([Int(2), Int(-1)], {})], {}),
+                                      Prod([Exp([Prod([Int(-1), x], {})], {}),
+                                            Pow([Int(2), Int(-1)], {})], {})], {}), y], {}), x], {})),
                      ]
         for test in test_list:
             if len(test) == 2:
@@ -115,4 +124,6 @@ class TestMathematica(TestCase):
             else:
                 expr, res, d = test
             tree = parse_mathematica(expr, debug=False)
+            if d:
+                print(tree)
             self.assertEqual(tree, res)

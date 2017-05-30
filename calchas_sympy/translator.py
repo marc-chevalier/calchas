@@ -115,9 +115,12 @@ class SympyTreeBuilder(AbstractVisitor):
         if isinstance(tree, ConstantFunctionCallExpression) or isinstance(tree.fun, GenericConstantFunction):
             f = self.functions[tree.fun]
             if not f.is_arity(len(tree.args)):
+                print(f.__class__)
+                print(tree)
                 raise SyntaxError
-            arguments = tuple(self.visit(e, *args) for e in tree.args)
-            call = f.call_function_with_unrearranged_args(arguments)
+            arguments = [self.visit(e, *args) for e in tree.args]
+            options = {self.visit(k, *args): self.visit(v, *args) for k, v in tree.options.items()}
+            call = f.call_function_with_unrearranged_args(arguments, options)
             return call
         if isinstance(tree.fun, IdExpression):
             if tree.fun.id not in self.functions:
@@ -126,8 +129,9 @@ class SympyTreeBuilder(AbstractVisitor):
             f = self.functions[tree.fun.id]
             if not f.is_arity(len(tree.args)):
                 raise SyntaxError
-            arguments = tuple(self.visit(e, *args) for e in tree.args)
-            call = f.call_function_with_unrearranged_args(arguments)
+            arguments = [self.visit(e, *args) for e in tree.args]
+            options = {self.visit(k, *args): self.visit(v, *args) for k, v in tree.options.items()}
+            call = f.call_function_with_unrearranged_args(arguments, options)
             return call
         raise ForbidenType()
 

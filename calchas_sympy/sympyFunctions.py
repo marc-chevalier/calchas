@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from sympy import *
+import typing
 
 import calchas_datamodel
 
@@ -10,18 +11,51 @@ class AbstractSympyFunction(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def call_function_with_unrearranged_args(self, args: tuple, debug: bool = False):
+    def call_function_with_unrearranged_args(self, args: typing.List[Expr],
+                                             opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False):
         pass
 
     def can_be_implicit(self) -> bool:
         return False
 
 
-class VariadicSympyFunction(AbstractSympyFunction):
+class ArbitraryadicSympyFunction(AbstractSympyFunction):  # Arbitrary arity. Everything is possible !
+    def __init__(self, sympy_function, is_arity, arrangement):
+        self._sympyFunction = sympy_function
+        self._isArity = is_arity
+        self._arrangement = arrangement
+
+    def is_arity(self, nb: int) -> bool:
+        return self._isArity(nb)
+
+    def call_function_with_unrearranged_args(self, args: typing.List[Expr],
+                                             opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False):
+        if debug:
+            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     _sympyFunction: ",
+                  end="")
+            print(self._sympyFunction)
+            print(type(self._sympyFunction))
+            print(type(type(self._sympyFunction)))
+            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     _arrangement(args): ",
+                  end="")
+            print(self._arrangement(args))
+        retres = self._sympyFunction(*self._arrangement(args))
+        if debug:
+            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     retres: ",
+                  end="")
+            print(retres)
+            print(type(retres))
+            print(retres.doit())
+            print(type(retres.doit()))
+        return retres
+
+
+class VariadicSympyFunction(ArbitraryadicSympyFunction):  # Finite number of possible arities
     def __init__(self, sympy_function, arg_permutations: dict):
         self._sympyFunction = sympy_function
         self._arity = set(arg_permutations.keys())
         self._argPermutations = arg_permutations
+        super(VariadicSympyFunction, self).__init__(sympy_function, self.is_arity, self._rearrange_arguments)
 
     def is_arity(self, nb: int) -> int:
         return nb in self._arity
@@ -34,10 +68,12 @@ class VariadicSympyFunction(AbstractSympyFunction):
     def arg_permutations(self):
         return self._argPermutations
 
-    def rearrange_arguments(self, args: tuple) -> tuple:
-        return tuple(args[self._argPermutations[len(args)][i]] for i in range(len(args)))
-    def call_function_with_unrearranged_args(self, args: tuple, debug: bool = False):
-        return self._sympyFunction(*self.rearrange_arguments(args))
+    def _rearrange_arguments(self, args: typing.List[Expr]) -> typing.List[Expr]:
+        return [args[self._argPermutations[len(args)][i]] for i in range(len(args))]
+
+    def call_function_with_unrearranged_args(self, args: typing.List[Expr],
+                                             opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False):
+        return self._sympyFunction(*tuple(self._rearrange_arguments(args)))
 
 
 class SympyFunction(VariadicSympyFunction, metaclass=ABCMeta):
@@ -57,7 +93,7 @@ class StdSympyFunction(SympyFunction):
         return self.arity
 
 
-class CompoundFunction(VariadicSympyFunction):
+class SpecialFunction(VariadicSympyFunction):
     def __init__(self, function_id: str):
         if function_id == "C":
             VariadicSympyFunction.__init__(
@@ -75,10 +111,6 @@ class CompoundFunction(VariadicSympyFunction):
                 lambda x, y: Mul(gamma(Add(1, x)),
                                  Pow(gamma(Add(Add(x, Mul(y, -1)), 1), -1))),
                 {2: [0, 1]})
-        elif function_id == "limitl":
-            VariadicSympyFunction.__init__(self, lambda x, y, z: limit(x, y, z, dir='-'), {3: [0, 1, 2]})
-        elif function_id == "limitr":
-            VariadicSympyFunction.__init__(self, lambda x, y, z: limit(x, y, z, dir='+'), {3: [0, 1, 2]})
         elif function_id == "log2":
             VariadicSympyFunction.__init__(self, lambda x: Mul(log(x), Pow(log(2), -1)), {1: [0]})
         elif function_id == "log10":
@@ -87,34 +119,33 @@ class CompoundFunction(VariadicSympyFunction):
             VariadicSympyFunction.__init__(self, lambda x: gamma(Add(x, 1)), {1: [0]})
 
 
-class ArbitraryadicSympyFunction(AbstractSympyFunction):
-    def __init__(self, sympy_function, is_arity, arrangement):
-        self._sympyFunction = sympy_function
-        self._isArity = is_arity
-        self._arrangement = arrangement
+class OptionFunction(AbstractSympyFunction):
+    def __init__(self, sympy_function):
+        self.sympy_function = sympy_function
+
+    @abstractmethod
+    def _merge_args_opts(self, args: typing.List[Expr],
+                         opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False) -> typing.List[Expr]:
+        pass
+
+    def call_function_with_unrearranged_args(self, args: typing.List[Expr],
+                                             opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False):
+        return self.sympy_function(*tuple(self._merge_args_opts(args, opts)))
+
+
+class LimitFunction(OptionFunction):
+    def __init__(self):
+        super(LimitFunction, self).__init__(limit)
 
     def is_arity(self, nb: int) -> bool:
-        return self._isArity(nb)
+        return nb == 1 or (nb - 1) % 2 == 0
 
-    def call_function_with_unrearranged_args(self, args: tuple, debug: bool = False) -> tuple:
-        if debug:
-            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     _sympyFunction: ",
-                  end="")
-            print(self._sympyFunction)
-            print(type(self._sympyFunction))
-            print(type(type(self._sympyFunction)))
-            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     _arrangement(args): ",
-                  end="")
-            print(self._arrangement(args))
-        retres = self._sympyFunction(*self._arrangement(args))
-        if debug:
-            print("ArbitraryadicSympyFunction >\n    call_function_with_unrearranged_args >\n     retres: ",
-                  end="")
-            print(retres)
-            print(type(retres))
-            print(retres.doit())
-            print(type(retres.doit()))
-        return retres
+    def _merge_args_opts(self, args: typing.List[Expr],
+                         opts: typing.Dict[typing.Union[str, Expr], Expr], debug: bool = False):
+        for k, v in opts.items():
+            args.append(k)
+            args.append(v)
+        return args
 
 
 class IntegrateSympyFunction(ArbitraryadicSympyFunction):
@@ -171,7 +202,7 @@ base_constants = {calchas_datamodel.pi: pi,
                   calchas_datamodel.gamma: EulerGamma,
                   }
 
-base_functions = {calchas_datamodel.A: CompoundFunction("A"),
+base_functions = {calchas_datamodel.A: SpecialFunction("A"),
                   calchas_datamodel.Abs: StdSympyFunction(Abs, 1),
                   calchas_datamodel.Arccos: StdSympyFunction(acos, 1),
                   calchas_datamodel.Argcsch: StdSympyFunction(acosh, 1),
@@ -183,7 +214,7 @@ base_functions = {calchas_datamodel.A: CompoundFunction("A"),
                   calchas_datamodel.Arctan: StdSympyFunction(atan, 1),
                   calchas_datamodel.Argtanh: StdSympyFunction(atanh, 1),
                   calchas_datamodel.Beta: StdSympyFunction(beta, 1),
-                  calchas_datamodel.C: CompoundFunction("C"),
+                  calchas_datamodel.C: SpecialFunction("C"),
                   calchas_datamodel.Ceiling: StdSympyFunction(ceiling, 1),
                   calchas_datamodel.Cos: StdSympyFunction(cos, 1),
                   calchas_datamodel.Cosh: StdSympyFunction(cosh, 1),
@@ -197,7 +228,7 @@ base_functions = {calchas_datamodel.A: CompoundFunction("A"),
                   calchas_datamodel.Exp: StdSympyFunction(exp, 1),
                   calchas_datamodel.Expand: StdSympyFunction(expand, 1),
                   calchas_datamodel.Factor: StdSympyFunction(factor, 1),
-                  calchas_datamodel.Fact: CompoundFunction("factorial"),
+                  calchas_datamodel.Fact: SpecialFunction("factorial"),
                   calchas_datamodel.FactorInt: StdSympyFunction(factorint, 1),
                   calchas_datamodel.Floor: StdSympyFunction(floor, 1),
                   calchas_datamodel.Gamma: StdSympyFunction(gamma, 1),
@@ -206,19 +237,19 @@ base_functions = {calchas_datamodel.A: CompoundFunction("A"),
                   #   calchas_datamodel.isPrime: StdSympyFunction(isprime, 1),
                   #   calchas_datamodel.Lambda": StdSympyFunction(Lambda, 2),
                   calchas_datamodel.Lcm: StdSympyFunction(lcm, 2),
-                  calchas_datamodel.Limit: StdSympyFunction(limit, 3),
+                  calchas_datamodel.Limit: LimitFunction(),
                   #   calchas_datamodel.limitl: CompoundFunction("limitl"),
                   #   calchas_datamodel.limitr: CompoundFunction("limitr"),
                   calchas_datamodel.Log: VariadicSympyFunction(log, {1: [0], 2: [0, 1]}),
-                  calchas_datamodel.Lb: CompoundFunction("log2"),
-                  calchas_datamodel.Lg: CompoundFunction("log10"),
+                  calchas_datamodel.Lb: SpecialFunction("log2"),
+                  calchas_datamodel.Lg: SpecialFunction("log10"),
                   calchas_datamodel.Mod: StdSympyFunction(Mod, 2),
                   calchas_datamodel.Approx: VariadicSympyFunction(N, {1: [0], 2: [0, 1]}),
                   calchas_datamodel.Not: StdSympyFunction(Not, 1),
                   calchas_datamodel.Or: StdSympyFunction(Or, 2),
                   calchas_datamodel.Pow: StdSympyFunction(Pow, 2),
                   calchas_datamodel.Prime: StdSympyFunction(prime, 1),
-                  calchas_datamodel.Prod: SumProdSympyFunction(prod),
+                  calchas_datamodel.BigProd: SumProdSympyFunction(prod),
                   #   calchas_datamodel.satisfiable": StdSympyFunction(satisfiable, 1),
                   calchas_datamodel.Sec: StdSympyFunction(sec, 1),
                   calchas_datamodel.Sech: StdSympyFunction(sech, 1),
@@ -230,6 +261,7 @@ base_functions = {calchas_datamodel.A: CompoundFunction("A"),
                   calchas_datamodel.Series: SumProdSympyFunction(summation),
                   calchas_datamodel.Sqrt: StdSympyFunction(sqrt, 1),
                   calchas_datamodel.Sum: ArbitraryadicSympyFunction(Add, lambda n: True, lambda x: x),
+                  calchas_datamodel.Prod: ArbitraryadicSympyFunction(Mul, lambda n: True, lambda x: x),
                   calchas_datamodel.Tan: StdSympyFunction(tan, 1),
                   calchas_datamodel.Tanh: StdSympyFunction(tanh, 1),
                   }
