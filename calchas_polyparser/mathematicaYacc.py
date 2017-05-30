@@ -1,8 +1,9 @@
+import typing
 import ply.yacc as yacc
-from .mathematicaLex import tokens
+from .mathematicaLex import tokens, mathematicaLexer
 from .mathematicaTranslate import translate_call, translate_id
 from calchas_datamodel import Sum, Prod, Pow, Fact, IntegerLiteralCalchasExpression as Int, \
-    FloatLiteralCalchasExpression as Float, Eq
+    FloatLiteralCalchasExpression as Float, Eq, AbstractExpression
 
 precedence = (
     ('left', 'PLUS', 'MINUS'),
@@ -74,7 +75,7 @@ def p_argument(p):
         else:
             p[0] = [p[1]], {}, []
     else:
-        p[0] = [], {p[1]: p[3]}, []
+        p[0] = [], {translate_id(p[1]): p[3]}, []
 
 
 def p_pow_expression(p):
@@ -162,3 +163,7 @@ def p_error(p):
     pass
 
 mathematicaParser = yacc.yacc(debug=True, write_tables=False, optimize=True)
+
+
+def parse_mathematica(s: str, debug: bool = False) -> typing.Optional[AbstractExpression]:
+    return mathematicaParser.parse(s, lexer=mathematicaLexer, debug=debug)

@@ -4,7 +4,7 @@ from calchas_datamodel import Sum, Prod, FunctionCallExpression as Call, Pow, Id
     Fact, IntegerLiteralCalchasExpression as Int, Series, infinity, Limit, Sqrt, C, Ceiling, \
     Log, Mod, pi
 
-from calchas_polyparser import latexParser, latexLexer, preprocess_latex
+from calchas_polyparser import latexParser, latexLexer, preprocess_latex, parse_latex
 
 
 class TestLatex(TestCase):
@@ -121,4 +121,5 @@ class TestLatex(TestCase):
                 d = False
             expr_ = preprocess_latex(expr)
             self.assertEqual(expr_, prep)
-            self.assertEqual(repr(latexParser.parse(expr_, lexer=latexLexer, debug=d)), repr(res))
+            self.assertEqual(latexParser.parse(expr_, lexer=latexLexer, debug=d), res)
+            self.assertEqual(parse_latex(expr, debug=d), res)

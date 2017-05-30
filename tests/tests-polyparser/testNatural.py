@@ -121,7 +121,7 @@ class TestNatural(TestCase):
                      ("Limit((1+x/n)^n, x, Infinity)",
                       Limit([Pow([Sum([_1, Prod([x, Pow([n, __1], {})], {})], {}), n], {}), x, infinity], {})),
                      ("Pow(1024, 1/2)", Pow([_1024, Prod([_1, Pow([_2, __1], {})], {})], {})),
-                     ("cos'(x)", Call(Diff([Fun(_d0, Cos([_d0], {})), _1], {}), [x], {})),
+                     ("cos'(x)", Call(Diff([Fun(_d0, Cos([_d0], {})), _1], {}), [x], {}), True),
                      ("cos''''(x)", Call(Diff([Fun(_d0, Cos([_d0], {})), _4], {}), [x], {})),
                      ("x | y", Or([x, y], {})),
                      ("~ y", Not([y], {})),
@@ -129,5 +129,12 @@ class TestNatural(TestCase):
                      ("x | ~z & ~ y", Or([x, And([Not([z], {}), Not([y], {})], {})], {})),
                      ("1+2+", None),
                      ]
-        for (expr, res) in test_list:
-            self.assertEqual(repr(parse_natural(expr)), repr(res))
+        for e in test_list:
+            if len(e) == 2:
+                expr, res = e
+                d = False
+            else:
+                expr, res, d = e
+
+            tree = parse_natural(expr)
+            self.assertEqual(tree, res)

@@ -1,6 +1,8 @@
+import typing
 import ply.yacc as yacc
 from .naturalLex import tokens, naturalLexer
 from .naturalTranslate import translate_call, translate_id
+from .naturalPreprocessing import preprocess_natural
 from calchas_datamodel.dummy import DummyGen
 from calchas_datamodel import Sum, Prod, Pow, Fact, IntegerLiteralCalchasExpression as Int, \
     FloatLiteralCalchasExpression as Float, Eq, And, Or, Not, Diff, Mod, FormulaFunctionExpression as Fun, \
@@ -57,7 +59,7 @@ def p_postfix_expression(p):
             fun = call.get_fun()
             args = call.get_args()
             opts = call.get_options()
-            dummy = Id(dummy_gen.get_dummy())
+            dummy = dummy_gen.get_dummy()
             lambda_fn = Fun(dummy, Call(fun, [dummy], opts))
             diff_fn = Diff([lambda_fn, Int(p[2])], {})
             p[0] = Call(diff_fn, args, opts)
@@ -197,6 +199,6 @@ def p_error(p):
 naturalParser = yacc.yacc(debug=True, write_tables=False, optimize=True)
 
 
-def parse_natural(expr: str) -> AbstractExpression:
+def parse_natural(expr: str) -> typing.Optional[AbstractExpression]:
     dummy_gen.reset()
-    return naturalParser.parse(expr, lexer=naturalLexer)
+    return naturalParser.parse(preprocess_natural(expr), lexer=naturalLexer)

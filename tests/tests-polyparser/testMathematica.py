@@ -1,9 +1,9 @@
 from unittest import TestCase
 
 from calchas_datamodel import Sum, Prod, FunctionCallExpression as Call, Pow, IdExpression as Id, Sin, Cos, \
-    Fact, IntegerLiteralCalchasExpression as Int, Series, infinity, Integrate, Limit, Solve, Eq
+    Fact, IntegerLiteralCalchasExpression as Int, Series, infinity, Integrate, Limit, Solve, Eq, Arctan, Sqrt
 
-from calchas_polyparser import mathematicaParser, mathematicaLexer
+from calchas_polyparser import parse_mathematica, mathematicaLexer
 
 
 class TestMathematica(TestCase):
@@ -47,8 +47,8 @@ class TestMathematica(TestCase):
         y = Id('y')
         test_list = [("0", Int(0)),
                      ("Sin[x]", Sin([x], {})),
-                     ("Arctan[x]", Call(Id('Arctan'), [x], {})),
-                     ("Sqrt[4]", Call(Id('Sqrt'), [Int(4)], {})),
+                     ("Arctan[x]", Arctan([x], {})),
+                     ("Sqrt[4]", Sqrt([Int(4)], {})),
                      ("ArcTan[x]", Call(Id('ArcTan'), [x], {})),
                      ("x^2", Pow([x, Int(2)], {})),
                      ("a+b", Sum([a, b], {})),
@@ -114,4 +114,5 @@ class TestMathematica(TestCase):
                 d = False
             else:
                 expr, res, d = test
-            self.assertEqual(repr(mathematicaParser.parse(expr, lexer=mathematicaLexer, debug=d)), repr(res))
+            tree = parse_mathematica(expr, debug=False)
+            self.assertEqual(tree, res)

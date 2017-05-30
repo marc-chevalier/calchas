@@ -6,7 +6,10 @@ T = TypeVar('T')
 
 class IntegerLiteralCalchasExpression(AbstractLiteralExpression):
     def __init__(self, value_: T):
-        self.value = value_
+        if isinstance(value_, str):
+            self.value = int(value_)
+        else:
+            self.value = value_
 
     def __repr__(self) -> str:
         return "Int(%s)" % str(self.value)

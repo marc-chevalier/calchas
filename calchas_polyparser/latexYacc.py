@@ -1,9 +1,11 @@
+import typing
 import ply.yacc as yacc
-from .latexLex import tokens
+from .latexLex import tokens, latexLexer
+from .latexPreprocessing import preprocess_latex
 from .latexTranslate import translate_call, translate_id
 from calchas_datamodel import Sum, Prod, Pow, Fact, IntegerLiteralCalchasExpression as Int, \
     FloatLiteralCalchasExpression as Float, Ceiling, Floor, Abs, C, Sqrt, Cos, Sin, Log, Exp, Tan, Series, BigProd, \
-    Integrate, Limit, Mod
+    Integrate, Limit, Mod, AbstractExpression
 
 precedence = (
     ('left', 'PLUS', 'MINUS'),
@@ -213,3 +215,7 @@ def p_error(p):
     pass
 
 latexParser = yacc.yacc(debug=True, write_tables=False, optimize=True)
+
+
+def parse_latex(s: str, debug: bool = False) -> typing.Optional[AbstractExpression]:
+    return latexParser.parse(preprocess_latex(s), lexer=latexLexer, debug=debug)
