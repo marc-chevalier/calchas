@@ -19,6 +19,10 @@ def is_math(formula):
         return 2  # Yes
     if is_anti:
         return 0  # No
+    if re.fullmatch(r'[A-Za-z ]+\??', formula):
+        return 0
+    if any(e in formula for e in MAYBE_CARACTERISTIC_SYMBOLS):
+        return 2
     return 1  # Maybe
 
 

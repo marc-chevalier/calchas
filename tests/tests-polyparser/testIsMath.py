@@ -347,8 +347,9 @@ class TestSympy(TestCase):
                                       'what is the difference between white eggs and brown eggs',
                                       'Antoine de Saint-Exupéry',
                                       'Author of bli-bla',
+                                      'one plus one',
                                       ]
         for e in mathematical_expressions:
-            self.assertTrue(is_math(e))
+            self.assertEqual(is_math(e), 2)
         for e in natural_language_sentences:
-            self.assertFalse(is_math(e))
+            self.assertEqual(is_math(e), 0)
