@@ -1,4 +1,4 @@
-from .isMath import is_math, is_interesting, relevance
+from .isMath import is_math, is_interesting, relevance, IsMath
 from .latexLex import latexLexer
 from .latexYacc import latexParser, parse_latex
 from .naturalLex import naturalLexer

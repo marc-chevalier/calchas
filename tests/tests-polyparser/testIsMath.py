@@ -1,4 +1,4 @@
-from calchas_polyparser import is_math
+from calchas_polyparser import is_math, IsMath
 from unittest import TestCase
 
 
@@ -350,6 +350,6 @@ class TestSympy(TestCase):
                                       'one plus one',
                                       ]
         for e in mathematical_expressions:
-            self.assertEqual(is_math(e), 2)
+            self.assertEqual(is_math(e), IsMath.Yes)
         for e in natural_language_sentences:
-            self.assertEqual(is_math(e), 0)
+            self.assertEqual(is_math(e), IsMath.No)

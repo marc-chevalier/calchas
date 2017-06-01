@@ -1,6 +1,7 @@
 from .dummy import DummyGen
 from .pattern import Pattern, Substitution
 from .visitor import AbstractVisitor, UnknownType
+from .autoEnum import AutoEnum
 from .rewriting import Rewriting
 from .placeholder import Placeholder
 from .idExpression import IdExpression
