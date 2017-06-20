@@ -348,7 +348,9 @@ class TestSympy(TestCase):
                                       'Antoine de Saint-Exupéry',
                                       'Author of bli-bla',
                                       'one plus one',
+                                      'Daños el primer ministro de Francia.',
                                       ]
+
         for e in mathematical_expressions:
             self.assertEqual(is_math(e), IsMath.Yes)
         for e in natural_language_sentences:

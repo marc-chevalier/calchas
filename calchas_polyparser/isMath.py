@@ -5,7 +5,7 @@ from calchas_datamodel import AutoEnum
 CARACTERISTIC_SYMBOLS = ['sqrt'] + list(r'*+!\_^[]{}%')
 LATEX_CARACTERISTIC_SYMBOLS = ['\\']
 MAYBE_CARACTERISTIC_SYMBOLS = list(r'-/()0123456789=')
-ANTI_CARACTERISTIC_SYMBOLS = list(r'?"éàèùçÉÀÈÙÇâêîôûäëïöüÂÊÎÔÛÄËÏÖÜ')
+ANTI_CARACTERISTIC_SYMBOLS = list(r'?"éàèùçÉÀÈÙÇâêîôûäëïöüÂÊÎÔÛÄËÏÖÜñ')
 ANTI_CARACTERISTIC_WORDS = ['Who', 'who', 'Whom', 'whom', 'When', 'when', 'What', 'what', 'Where', 'where', 'Which',
                             'which', 'How', 'how', 'Why', 'why', 'is', 'Is', 'of', 'in', 'the']
 ANTI_CARACTERISTIC_REGEX = ['sum', 'derivative', 'product', 'limit', 'antiderivative', 'integrate', 'approx',
