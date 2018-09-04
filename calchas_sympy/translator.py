@@ -15,7 +15,7 @@ class ForbidenType(Exception):
 
 class Translator:
     def __init__(self):
-        self.context = base_constants, base_functions
+        self.reset()
 
     def to_sympy_tree(self, tree: AbstractExpression) -> sympy.Expr:
         builder = SympyTreeBuilder(tree, self.context)
@@ -28,7 +28,7 @@ class Translator:
         return e
 
     def reset(self):
-        self.context = base_constants, base_functions
+        self.context = base_constants.copy(), base_functions.copy()
 
 
 class CalchasTreeBuilder:
@@ -37,8 +37,8 @@ class CalchasTreeBuilder:
                  context: typing.Optional[typing.Tuple[typing.Dict[str, sympy.Expr],
                                                        typing.Dict[str, AbstractSympyFunction]]] = None):
         self.tree = tree
-        self.variables = context[0] if context is None else base_constants
-        self.functions = context[1] if context is None else base_functions
+        self.variables = context[0] if context is not None else base_constants
+        self.functions = context[1] if context is not None else base_functions
 
     def _visit_symbol(self, tree: sympy.Symbol, *args) -> AbstractExpression:
         for (k, v) in self.variables.items():
@@ -100,8 +100,8 @@ class SympyTreeBuilder(AbstractVisitor):
                  context: typing.Optional[typing.Tuple[typing.Dict[ConstantValueExpression, sympy.Expr],
                                           typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]] = None):
         super().__init__(tree)
-        self.variables = context[0] if context is None else base_constants
-        self.functions = context[1] if context is None else base_functions
+        self.variables = context[0] if context is not None else base_constants
+        self.functions = context[1] if context is not None else base_functions
 
     def _visit_placeholder(self, tree: Placeholder, *args) -> sympy.Expr:
         raise ForbidenType()
