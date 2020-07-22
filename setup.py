@@ -6,9 +6,9 @@ setup(
     name='calchas',
     version='0.2',
     description='A collection of package about computer algebra system',
-    url='https://github.com/s-i-newton/calchas',
+    url='https://github.com/marc-chevalier/calchas',
     author='Marc Chevalier',
-    author_email='calchas@marc.chevalier',
+    author_email='calchas@marc-chevalier.com',
     license='MIT',
     classifiers=[
         'Development Status :: 1 - Planning',

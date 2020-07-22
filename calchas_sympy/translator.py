@@ -1,5 +1,6 @@
 import sympy
 import typing
+import inspect
 
 from calchas_datamodel import AbstractVisitor, AbstractExpression, Placeholder, IdExpression, FunctionCallExpression, \
     FormulaFunctionExpression, IntegerLiteralCalchasExpression, FloatLiteralCalchasExpression, \
@@ -13,13 +14,43 @@ class ForbidenType(Exception):
     pass
 
 
+def context_from_globals() -> typing.Tuple[typing.Dict[ConstantValueExpression, sympy.Expr],
+                                           typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]:
+    var = {}
+    fun = {}
+    caller_frame = inspect.currentframe().f_back
+    caller_globals = {**caller_frame.f_globals, **caller_frame.f_locals}
+    diff_keys = set(caller_globals.keys()) - set(caller_frame.f_builtins.keys())
+    caller_globals = {k: caller_globals[k] for k in diff_keys}
+    for name, value in caller_globals.items():
+        if isinstance(value, int):
+            var[name] = sympy.Integer(value)
+        elif isinstance(value, float):
+            var[name] = sympy.Float(value)
+        elif isinstance(value, sympy.Expr):
+            var[name] = value
+        elif isinstance(value, AbstractExpression):
+            var[name] = value
+    return var, fun
+
+
 class Translator:
-    def __init__(self):
+    def __init__(self,
+                 context: typing.Optional[typing.Tuple[typing.Dict[ConstantValueExpression, sympy.Expr],
+                                                       typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]]
+                 = None):
+        self.init_variables = context[0] if context is not None else base_constants
+        self.init_functions = context[1] if context is not None else base_functions
+        self.context = None
         self.reset()
 
     def to_sympy_tree(self, tree: AbstractExpression) -> sympy.Expr:
         builder = SympyTreeBuilder(tree, self.context)
-        e = sympy.simplify(builder.visit())
+        visited = builder.visit()
+        if isinstance(visited, list):
+            e = [sympy.simplify(e) for e in visited]
+        else:
+            e = sympy.simplify(visited)
         return e
 
     def to_calchas_tree(self, tree: sympy.Expr) -> AbstractExpression:
@@ -28,14 +59,15 @@ class Translator:
         return e
 
     def reset(self):
-        self.context = base_constants.copy(), base_functions.copy()
+        self.context = self.init_variables.copy(), self.init_functions.copy()
 
 
 class CalchasTreeBuilder:
     def __init__(self,
                  tree: sympy.Expr,
-                 context: typing.Optional[typing.Tuple[typing.Dict[str, sympy.Expr],
-                                                       typing.Dict[str, AbstractSympyFunction]]] = None):
+                 context: typing.Optional[typing.Tuple[typing.Dict[ConstantValueExpression, sympy.Expr],
+                                                       typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]]
+                 = None):
         self.tree = tree
         self.variables = context[0] if context is not None else base_constants
         self.functions = context[1] if context is not None else base_functions
@@ -54,7 +86,7 @@ class CalchasTreeBuilder:
             return IntegerLiteralCalchasExpression(tree.p)
         return FloatLiteralCalchasExpression(tree.p/tree.q)
 
-    def _visit_apply_undef(self, tree: sympy.function.AppliedUndef, *args) -> AbstractExpression:
+    def _visit_apply_undef(self, tree: sympy.core.function.AppliedUndef, *args) -> AbstractExpression:
         a = [self.visit(e) for e in tree.args]
         for (k, v) in self.variables.items():
             if v == tree:
@@ -79,7 +111,7 @@ class CalchasTreeBuilder:
             int: self._visit_int,
             sympy.Integer: self._visit_rational,
             sympy.Rational: self._visit_rational,
-            sympy.function.AppliedUndef: self._visit_apply_undef,
+            sympy.core.function.AppliedUndef: self._visit_apply_undef,
             dict: self._visit_dict,
             sympy.Lambda: self._visit_lambda,
         }
@@ -98,7 +130,8 @@ class SympyTreeBuilder(AbstractVisitor):
     def __init__(self,
                  tree: AbstractExpression,
                  context: typing.Optional[typing.Tuple[typing.Dict[ConstantValueExpression, sympy.Expr],
-                                          typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]] = None):
+                                                       typing.Dict[ConstantFunctionExpression, AbstractSympyFunction]]]
+                 = None):
         super().__init__(tree)
         self.variables = context[0] if context is not None else base_constants
         self.functions = context[1] if context is not None else base_functions
@@ -109,6 +142,8 @@ class SympyTreeBuilder(AbstractVisitor):
     def _visit_id(self, tree: IdExpression, *args) -> sympy.Expr:
         if tree.id not in self.variables.keys():
             self.variables[tree.id] = sympy.symbols(tree.id)
+        if tree.id in self.variables.keys() and isinstance(self.variables[tree.id], AbstractExpression):
+            self.variables[tree.id] = self.visit(self.variables[tree.id])
         return self.variables[tree.id]
 
     def _visit_call(self, tree: FunctionCallExpression, *args) -> sympy.Expr:

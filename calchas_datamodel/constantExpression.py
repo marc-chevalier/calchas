@@ -36,6 +36,7 @@ class GenericConstantValueExpression(ConstantValueExpression):
     def __hash__(self):
         return hash(self.name)
 
+
 constant_values = {}
 
 
@@ -88,6 +89,7 @@ class ConstantFunctionCallExpression(FunctionCallExpression):
                  args_: typing.Optional[typing.List[AbstractExpression]] = None,
                  options_: typing.Optional[Opt_t] = None):
         super().__init__(fun_, args_, options_)
+
 
 constant_functions = {}
 

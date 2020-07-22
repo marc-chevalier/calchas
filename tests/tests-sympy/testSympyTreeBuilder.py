@@ -6,11 +6,18 @@ from calchas_datamodel import IdExpression as Id, FunctionCallExpression as Call
     DictFunctionExpression, Series, Prod, Pow, Fact, infinity, Solve, Eq, Exp, Limit, Log
 
 from calchas_sympy import Translator
+from calchas_sympy.sympyFunctions import base_constants, base_functions
+from calchas_sympy.translator import context_from_globals
+
+a = 37
+b = 5
+c = Gcd([Int(12), Int(18)])
+d = sympy.Rational(47, 10)
 
 
 class TestSympyTreeBuilder(TestCase):
     def testToSympy(self):
-        _x = sympy.symbols('x_')
+        _x = sympy.symbols('x')
         _y = sympy.symbols('y')
         i = Id('i')
         n = Id('n')
@@ -30,7 +37,7 @@ class TestSympyTreeBuilder(TestCase):
                      (Gcd([Sum([Int(18), Int(18)]), Int(18)]), 18),
                      (pi, sympy.pi),
                      (Fun(Id('x'), Id('x')), sympy.Lambda(_x, _x)),
-                     (Series([Prod([Pow([x, n], {}), Pow([Fact([n], {}), Int(-1)], {})], {}), n, Int(0), infinity], {}), sympy.exp(x)),
+                     (Series([Prod([Pow([x, n], {}), Pow([Fact([n], {}), Int(-1)], {})], {}), n, Int(0), infinity], {}), sympy.exp(_x)),
                      (Solve([Eq([Sum([Prod([Exp([x], {}), Pow([Int(2), Int(-1)], {})], {}),
                                       Prod([Exp([Prod([Int(-1), x], {})], {}),
                                             Pow([Int(2), Int(-1)], {})], {})], {}), y], {}), x], {}),
@@ -41,6 +48,44 @@ class TestSympyTreeBuilder(TestCase):
 
         for (tree, res) in test_list:
             builder = Translator()
+            sympy_tree = builder.to_sympy_tree(tree)
+            self.assertEqual(sympy_tree, res)
+
+    def testToSympyWithContext(self):
+        _x = sympy.symbols('x_')
+        _y = sympy.symbols('y')
+        i = Id('i')
+        n = Id('n')
+        x = Id('x')
+        y = Id('y')
+        f = sympy.symbols('f', cls=sympy.Function)
+        test_list = [(Id('a'), sympy.Symbol('a'), ({}, {})),
+                     (Id('a'), sympy.Integer(5), ({'a': sympy.Integer(5)}, {})),
+                     ]
+
+        for (tree, res, context) in test_list:
+            builder = Translator(context=context)
+            sympy_tree = builder.to_sympy_tree(tree)
+            self.assertEqual(sympy_tree, res)
+
+    def testContextFromGlobals(self):
+        _x = sympy.symbols('x_')
+        _y = sympy.symbols('y')
+        i = Id('i')
+        n = Id('n')
+        x = Id('x')
+        y = Id('y')
+        f = sympy.symbols('f', cls=sympy.Function)
+        test_list = [(Sum([Id("a"), Id("b")]), 42),
+                     (Id("d"), sympy.Rational(47, 10)),
+                     (Id("c"), 6),
+                     ]
+
+        var, fun = context_from_globals()
+        context = ({**var, **base_constants}, {**fun, **base_functions})
+
+        for (tree, res) in test_list:
+            builder = Translator(context=context)
             sympy_tree = builder.to_sympy_tree(tree)
             self.assertEqual(sympy_tree, res)
 
